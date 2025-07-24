@@ -1,32 +1,198 @@
-
 generator client {
-  provider = "prisma-client-js"
+ provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+ directUrl = env("DIRECT_URL")
 }
 
-model Role {
-id String @id @default(uuid())
-name String
+enum TransactionStatus {
+ WAITING_FOR_PAYMENT
+ PAID
+ FAILED
+ CANCELED
+ EXPIRED
 }
 
 model User {
-  id String @id @default(uuid())
-  firstname String
-  lastname String
-  email String @unique
-  password String
-  biography String
-  role_id String
-  referal_code String
-  avatar String
+ id String @id @default(uuid())
+ firstname String
+ lastname String
+ email String @unique
+ password String
+ referal_code String @unique
+ avatar String?
+ description String?
+ login_attempt Int @default(0)
+ temp_token String?
+ is_verified Boolean @default(false)
+ created_at DateTime @default(now())
+ deleted_at DateTime?
+ edited_at DateTime @updatedAt
 
-  
-  
+ role_id String
+ role Role @relation(fields: [role_id], references: [id])
 
+ events Event[] @relation("UserEvents")
+ transactions Transaction[]
+ coupons Coupon[]
+ points Points[]
+ referrals Points[] @relation("Referrer")
 }
-        
+
+model Role {
+ id String @id @default(uuid())
+ name String @unique
+
+ users User[]
+}
+
+model Province {
+ id String @id @default(uuid())
+ name String @unique
+ locations Location[]
+}
+
+model Location {
+ id String @id @default(uuid())
+ city String
+ province_id String
+ province Province @relation(fields: [province_id], references: [id])
+ events Event[]
+}
+
+model Event {
+ id String @id @default(uuid())
+ nama String
+ deskripsi String
+ header String
+ start_date DateTime
+ end_date DateTime
+ start_time String
+ end_time String
+ is_free Boolean @default(false)
+ adress String
+ slug String @unique
+ status String
+ created_at DateTime @default(now())
+ edited_at DateTime @updatedAt
+
+ location_id String
+ organizer_id String
+
+ location Location @relation(fields: [location_id], references: [id])
+ organizer User @relation("UserEvents", fields: [organizer_id], references: [id])
+ ticketTypes TicketType[]
+ eventCategories EventCategory[]
+ transactions Transaction[]
+ vouchers Voucher[]
+}
+
+model TicketType {
+ id String @id @default(uuid())
+ event_id String
+ type String
+ price Int
+ available_seat Int
+ is_soldout Boolean @default(false)
+ description String?
+
+ event Event @relation(fields: [event_id], references: [id])
+ transactionLists TransactionList[]
+}
+
+model Category {
+ id String @id @default(uuid())
+ name String @unique
+ eventCategories EventCategory[]
+}
+
+model EventCategory {
+ id String @id @default(uuid())
+ event_id String
+ category_id String
+
+ event Event @relation(fields: [event_id], references: [id])
+ category Category @relation(fields: [category_id], references: [id])
+
+ @@unique([event_id, category_id])
+}
+
+model Transaction {
+ id String @id @default(uuid())
+ user_id String
+ event_id String
+ status TransactionStatus @default(WAITING_FOR_PAYMENT)
+ coupon_id String?
+ voucher_id String?
+ created_at DateTime @default(now())
+ expired_at DateTime
+ is_attending Boolean @default(false)
+
+ user User @relation(fields: [user_id], references: [id])
+ event Event @relation(fields: [event_id], references: [id])
+ coupon Coupon? @relation("CouponUsed", fields: [coupon_id], references: [id])
+ voucher Voucher? @relation("VoucherUsed", fields: [voucher_id], references: [id])
+ items TransactionList[]
+}
+
+model TransactionList {
+ id String @id @default(uuid())
+ transaction_id String
+ ticket_type_id String
+ holder_name String
+ ticket_code String @unique
+
+ transaction Transaction @relation(fields: [transaction_id], references: [id])
+ ticketType TicketType @relation(fields: [ticket_type_id], references: [id])
+ rating Rating?
+}
+
+model Rating {
+ id String @id @default(uuid())
+ transaction_list_id String @unique
+ rating Int
+ description String?
+ created_at DateTime @default(now())
+
+ transactionList TransactionList @relation(fields: [transaction_list_id], references: [id])
+}
+
+model Voucher {
+ id String @id @default(uuid())
+ event_id String
+ code String @unique
+ discount_amount Int
+ times_used Int @default(0)
+ quota Int
+ is_available Boolean @default(true)
+ expired_date DateTime
+
+ event Event @relation(fields: [event_id], references: [id])
+ transactions Transaction[] @relation("VoucherUsed")
+}
+
+model Coupon {
+ id String @id @default(uuid())
+ code String @unique
+ discount_amount Int
+ user_id String
+ expired_date DateTime
+
+ user User @relation(fields: [user_id], references: [id])
+ transactions Transaction[] @relation("CouponUsed")
+}
+
+model Points {
+ id String @id @default(uuid())
+ user_id String
+ referrer_id String
+ points_amount Int
+ created_at DateTime @default(now())
+ expired_date DateTime
+
+ user User @relation(fields: [user_id], references: [id])
+ referrer User @relation("Referrer", fields: [referrer_id], references: [id])
+}

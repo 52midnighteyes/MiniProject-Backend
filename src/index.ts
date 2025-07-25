@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { PORT } from "./config";
 
 import { errorHandler } from "./middlewares/errorHandler.middleware";
-import { AppError } from "./utils/classes/AppError.utils";
+import { AppError } from "./classes/AppError.utils";
 
 const port = PORT || 8080;
 

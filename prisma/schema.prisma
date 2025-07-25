@@ -39,7 +39,6 @@ model User {
  transactions Transaction[]
  coupons Coupon[]
  points Points[]
- referrals Points[] @relation("Referrer")
 }
 
 model Role {
@@ -177,9 +176,10 @@ model Voucher {
 model Coupon {
  id String @id @default(uuid())
  code String @unique
- discount_amount Int
+ discount_amount Decimal @default(0.10)
  user_id String
  expired_date DateTime
+ is_used Boolean @default(false)
 
  user User @relation(fields: [user_id], references: [id])
  transactions Transaction[] @relation("CouponUsed")
@@ -188,11 +188,10 @@ model Coupon {
 model Points {
  id String @id @default(uuid())
  user_id String
- referrer_id String
- points_amount Int
+ points_amount Int @default(10000)
  created_at DateTime @default(now())
  expired_date DateTime
+ is_used Boolean @default(false)
 
  user User @relation(fields: [user_id], references: [id])
- referrer User @relation("Referrer", fields: [referrer_id], references: [id])
 }

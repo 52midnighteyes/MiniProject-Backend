@@ -64,7 +64,7 @@ git commit -m "feat: implement login endpoint with JWT"
 
 ## 4. PUSH BRANCH KE GITHUB
 
-Setelah commit, dorong branch kamu ke GitHub agar bisa dilihat dan direview tim:
+Setelah commit, push branch kamu ke GitHub agar bisa dilihat dan direview tim:
 
 ```bash
 git push origin feature/nama-fitur
@@ -88,7 +88,7 @@ Setelah branch berhasil di-push:
 4. Assign reviewer jika diperlukan.
 5. Klik “Create pull request”.
 
-> Jangan melakukan merge ke `main` tanpa review atau persetujuan dari tim.
+> Jangan melakukan merge ke `main` tanpa review.
 
 ---
 

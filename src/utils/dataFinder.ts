@@ -40,7 +40,7 @@ export async function findUserByRefferal(refferal_code: string) {
       },
     },
     where: {
-      referal_code: {
+      referral_code: {
         equals: refferal_code,
         mode: "insensitive",
       },

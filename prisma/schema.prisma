@@ -22,7 +22,8 @@ model User {
  lastname String
  email String @unique
  password String
- referal_code String @unique
+ referral_code String @unique
+ referrer_id String?
  avatar String?
  description String?
  login_attempt Int @default(0)
@@ -34,6 +35,9 @@ model User {
 
  role_id String
  role Role @relation(fields: [role_id], references: [id])
+
+referrer User? @relation("UserReferrals", fields: [referrer_id], references: [id])
+ referred_users User[]   @relation("UserReferrals") 
 
  events Event[] @relation("UserEvents")
  transactions Transaction[]

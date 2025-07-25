@@ -3,7 +3,10 @@ export interface IUserParams {
   email: string;
   firstname: string;
   lastname: string;
-  role: string;
+  role: {
+    id: string;
+    name: string;
+  };
 }
 
 declare global {

@@ -15,7 +15,6 @@ export function errorHandler(
       message: err.message,
     });
   } else {
-    // Unexpected or programming error
     res.status(500).json({
       success: false,
       message: "Internal Server Error",

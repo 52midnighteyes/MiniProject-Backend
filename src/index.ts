@@ -2,9 +2,10 @@ import express, { Request, Response, NextFunction } from "express";
 import { PORT } from "./config";
 
 import { errorHandler } from "./middlewares/errorHandler.middleware";
-import { AppError } from "./utils/classes/AppError.utils";
+import { AppError } from "./classes/AppError.utils";
 
-const port = PORT || 8080;
+import AuthRouter from "./routers/auth.router";
+const port = PORT || 8000;
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.get("/api", (req: Request, res: Response) => {
 });
 
 //ROUTER
+
+app.use("/api/auth", AuthRouter);
 
 // UKNOWN ROUTE FALLBACK
 app.use((req, res, next) => {

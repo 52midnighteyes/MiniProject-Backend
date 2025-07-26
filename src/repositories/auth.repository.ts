@@ -2,12 +2,16 @@ import { AppError } from "../classes/AppError.utils";
 import { IRegisterParam, IVerifyUserParam } from "../interfaces/auth.interface";
 import { findUserByEmail } from "../utils/dataFinder";
 import prisma from "../lib/prisma";
-import { IUserParams } from "../user";
 import { sign } from "jsonwebtoken";
 import { SECRET_KEY } from "../config";
 import { randomCodeGenerator } from "../utils/randomCode";
 
+import fs from "fs";
+import path from "path";
+import Handlebars from "handlebars";
+
 import { genSaltSync, hashSync } from "bcrypt";
+import mailer from "../lib/nodemailer";
 
 async function findUserById(id: string) {
   const response = await prisma.user.findFirst({
@@ -29,6 +33,16 @@ export async function RegisterRepo(params: IRegisterParam) {
 
     const salt = genSaltSync(15);
     const hashed = hashSync(params.password, salt);
+
+    const hbsPath = path.join(
+      __dirname,
+      "../handlebars-templates/Registration.template.hbs"
+    );
+    const readHbs = fs.readFileSync(hbsPath, "utf-8");
+    const compileHbs = Handlebars.compile(readHbs);
+    const html = compileHbs({
+      name: `${params.firstname} ${params.lastname}`,
+    });
 
     const response = await prisma.$transaction(async (tx) => {
       const threeMonthsLater = new Date();
@@ -98,9 +112,13 @@ export async function RegisterRepo(params: IRegisterParam) {
 
     if (!response) throw new AppError(500, "registration error");
 
-    const token = sign(response, SECRET_KEY as string, { expiresIn: "1h" });
+    await mailer.sendMail({
+      to: response.email,
+      subject: "Welcome to Better Ticket",
+      html: html,
+    });
 
-    // tambahin nodemailer ucapan berhasil registrasi dan link verifikasi kalau end point verifikasi sudah ada
+    const token = sign(response, SECRET_KEY as string, { expiresIn: "1h" });
 
     return { response, token };
   } catch (err) {

@@ -1,13 +1,16 @@
 import { AppError } from "../classes/AppError.utils";
 import {
+  IForgotPasswordParams,
+  IForgotPasswordReqParam,
   ILoginParams,
   IRegisterParams,
+  IResetPasswordParams,
   IVerifyUserParam,
 } from "../interfaces/auth.interface";
 import { findUserByEmail } from "../utils/dataFinder";
 import prisma from "../lib/prisma";
 import { sign } from "jsonwebtoken";
-import { SECRET_KEY } from "../config";
+import { FE_URL, SECRET_KEY } from "../config";
 import { randomCodeGenerator } from "../utils/randomCode";
 
 import { IUserParams } from "../user";
@@ -19,6 +22,7 @@ import Handlebars from "handlebars";
 import { genSaltSync, hashSync } from "bcrypt";
 import mailer from "../lib/nodemailer";
 import { compareSync } from "bcrypt";
+import { hash } from "crypto";
 import { response } from "express";
 
 async function findUserById(id: string) {
@@ -231,7 +235,7 @@ export async function LoginRepo(params: ILoginParams) {
       });
     });
 
-    const payload: IUserParams = {
+    const response: IUserParams = {
       id: user.id,
       email: user.email,
       firstname: user.firstname,
@@ -239,20 +243,134 @@ export async function LoginRepo(params: ILoginParams) {
       role: user.role,
     };
 
-    const token = sign(payload, SECRET_KEY as string, {
+    const token = sign(response, SECRET_KEY as string, {
       expiresIn: "2h",
     });
 
-    return { payload, token };
+    return { response, token };
   } catch (err) {
     throw err;
   }
 }
 
-export async function ForgotPasswordRepo() {
-  //ambil email dari param
-  //query data
-  //ambil data jadi payload
-  //bikin temp token
-  //kirim ke email
+export async function resetPassowordRepo(params: IResetPasswordParams) {
+  try {
+    const response = await findUserByEmail(params.email);
+    if (!response) throw new AppError(404, "data not found");
+    const isOldPasswordMatch = compareSync(
+      response.password,
+      params.old_password
+    );
+    if (!isOldPasswordMatch)
+      throw new AppError(400, "old password doesn't match");
+
+    const salt = genSaltSync(10);
+    const hashed = hashSync(params.new_password, salt);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: {
+          email: params.email,
+        },
+        data: {
+          password: hashed,
+        },
+      });
+    });
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function ForgotPasswordReqRepo(params: IForgotPasswordReqParam) {
+  try {
+    const response = await findUserByEmail(params);
+    if (!response) {
+      throw new AppError(404, "we sent you the email");
+    }
+
+    const payload = {
+      id: response.id,
+      firstname: response.firstname,
+      lastname: response.lastname,
+      email: response.email,
+      role: {
+        ...response.role,
+      },
+    };
+
+    const token = sign(payload, SECRET_KEY as string, { expiresIn: "1h" });
+
+    const updateToken = await prisma.$transaction(async (tx) => {
+      const response = await tx.user.update({
+        where: {
+          email: params,
+        },
+        data: {
+          temp_token: token,
+        },
+      });
+
+      return response.temp_token;
+    });
+
+    if (!updateToken) {
+      throw new AppError(404, "internal server error");
+    }
+
+    const hbsPath = path.join(
+      __dirname,
+      "../handlebars-templates/ForgotPasswordRequest.template.hbs"
+    );
+    const readHbs = fs.readFileSync(hbsPath, "utf-8");
+    const compileHbs = Handlebars.compile(readHbs);
+    const html = compileHbs({
+      name: `${response.firstname} ${response.lastname}`,
+      token: token,
+      domain: `${FE_URL}/api/auth/forgot_password`,
+    });
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function ForgotPasswordRepo(params: IForgotPasswordParams) {
+  try {
+    const salt = genSaltSync(10);
+    const hashed = hashSync(params.password, salt);
+
+    const response = await prisma.$transaction(async (tx) => {
+      const response = await tx.user.update({
+        where: {
+          email: params.email,
+        },
+        data: {
+          password: hashed,
+        },
+        select: {
+          id: true,
+          firstname: true,
+          lastname: true,
+          email: true,
+          role: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+      return response;
+    });
+
+    if (!response) throw new AppError(404, "something went wrong");
+
+    const token = sign(response, SECRET_KEY as string, {
+      expiresIn: "1h",
+    });
+
+    return { response, token };
+  } catch (err) {
+    throw err;
+  }
 }

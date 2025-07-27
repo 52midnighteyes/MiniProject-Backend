@@ -13,3 +13,16 @@ export interface ILoginParams {
   email: string;
   password: string;
 }
+
+export interface IResetPasswordParams {
+  email: string;
+  old_password: string;
+  new_password: string;
+}
+
+export interface IForgotPasswordParams {
+  password: string;
+  email: string;
+}
+
+export type IForgotPasswordReqParam = string;

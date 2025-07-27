@@ -1,6 +1,14 @@
 import { Request, Response, NextFunction, response } from "express";
-import { RegisterRepo, VerifyUserRepo } from "../repositories/auth.repository";
+import {
+  RegisterRepo,
+  VerifyUserRepo,
+  ForgotPasswordRepo,
+  ForgotPasswordReqRepo,
+  resetPassowordRepo,
+  LoginRepo,
+} from "../repositories/auth.repository";
 import { AppError } from "../classes/AppError.utils";
+import { IUserParams } from "../user";
 
 export async function RegisterController(
   req: Request,
@@ -10,7 +18,6 @@ export async function RegisterController(
   try {
     const response = await RegisterRepo(req.body);
 
-    console.log("ini nih yang gue cari", response);
     res.status(201).json({
       message: "registration success",
       data: response,
@@ -29,8 +36,14 @@ export async function LoginUserController(
   next: NextFunction
 ) {
   try {
+    const response = await LoginRepo({ ...req.body });
+
+    res.status(210).json({
+      message: "ok",
+      data: response,
+    });
   } catch (err) {
-    throw err;
+    next(err);
   }
 }
 
@@ -41,12 +54,62 @@ export async function VerifyUserController(
 ) {
   try {
     const id = req.query.id;
-    console.log("ini idnya", id);
-    if (!id) throw new AppError(404, "wrong input");
     const response = await VerifyUserRepo(id as string);
 
     res.status(201).json({
       messsage: "successfull",
+      data: response,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resetPassowordController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { email } = req.user as IUserParams;
+    const response = resetPassowordRepo({ ...req.body, email });
+
+    res.status(201).json({
+      message: "password has changed",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function ForgotPasswordReqController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const email: string = req.body.email;
+    await ForgotPasswordReqRepo(email);
+
+    res.status(201).json({
+      message: "email sent",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function ForgotPasswordController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { email } = req.user as IUserParams;
+    const response = await ForgotPasswordRepo({ ...req.body, email });
+
+    res.status(201).json({
+      message: "ok",
       data: response,
     });
   } catch (err) {

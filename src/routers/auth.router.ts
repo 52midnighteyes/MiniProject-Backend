@@ -1,14 +1,44 @@
 import { Router } from "express";
 import {
+  ForgotPasswordController,
+  ForgotPasswordReqController,
+  LoginUserController,
   RegisterController,
+  resetPassowordController,
   VerifyUserController,
 } from "../controllers/auth.controller";
-import { userRegisterSchema } from "../schemas/auth.schema";
+import {
+  ForgotPasswordReqSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchmea,
+  userLoginSchema,
+  userRegisterSchema,
+} from "../schemas/auth.schema";
 import validate from "../middlewares/validator.middleware";
+import { verifyToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
+router.patch(
+  "/forgot-password",
+  validate(ForgotPasswordReqSchema),
+  ForgotPasswordReqController
+);
+
+router.use(verifyToken);
+
+router.patch(
+  "/forgot-password",
+  validate(ForgotPasswordSchema),
+  ForgotPasswordController
+);
 router.post("/register", validate(userRegisterSchema), RegisterController);
 router.patch("/", VerifyUserController);
+router.post("/login", validate(userLoginSchema), LoginUserController);
+router.patch(
+  "/reset-password",
+  validate(ResetPasswordSchmea),
+  resetPassowordController
+);
 
 export default router;

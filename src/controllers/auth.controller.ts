@@ -23,6 +23,17 @@ export async function RegisterController(
   }
 }
 
+export async function LoginUserController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+  } catch (err) {
+    throw err;
+  }
+}
+
 export async function VerifyUserController(
   req: Request,
   res: Response,

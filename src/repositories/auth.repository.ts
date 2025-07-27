@@ -1,5 +1,6 @@
 import { AppError } from "../classes/AppError.utils";
 import {
+  ILoginParams,
   IRegisterParams,
   IVerifyUserParam,
 } from "../interfaces/auth.interface";
@@ -9,12 +10,16 @@ import { sign } from "jsonwebtoken";
 import { SECRET_KEY } from "../config";
 import { randomCodeGenerator } from "../utils/randomCode";
 
+import { IUserParams } from "../user";
+
 import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
 
 import { genSaltSync, hashSync } from "bcrypt";
 import mailer from "../lib/nodemailer";
+import { compareSync } from "bcrypt";
+import { response } from "express";
 
 async function findUserById(id: string) {
   const response = await prisma.user.findFirst({
@@ -173,9 +178,75 @@ export async function VerifyUserRepo(id: IVerifyUserParam) {
   }
 }
 
-export async function LoginRepo() {
-  //compare hash
-  //send data + token ke FE
+export async function LoginRepo(params: ILoginParams) {
+  try {
+    const user = await findUserByEmail(params.email);
+    if (!user) throw new AppError(404, "Email or Password is invalid");
+
+    if (user.is_suspended) {
+      throw new AppError(
+        403,
+        "Your account is temporarily disabled, please check your email"
+      );
+    }
+
+    const isPasswordMatch = compareSync(params.password, user.password);
+    if (!isPasswordMatch) {
+      const failedCounter = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          login_attempt: user.login_attempt + 1,
+        },
+        select: {
+          login_attempt: true,
+        },
+      });
+
+      //future update
+      //20x failed -> suspend account -> kirim email untuk change pass
+
+      if (failedCounter.login_attempt >= 5) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            login_time_out: new Date(Date.now() + 15 * 60 * 1000),
+          },
+        });
+
+        throw new AppError(
+          403,
+          "Too many failed attempts. Try again 15 minutes later."
+        );
+      }
+
+      throw new AppError(404, "Email or Password is invalid");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          login_attempt: 0,
+        },
+      });
+    });
+
+    const payload: IUserParams = {
+      id: user.id,
+      email: user.email,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      role: user.role,
+    };
+
+    const token = sign(payload, SECRET_KEY as string, {
+      expiresIn: "2h",
+    });
+
+    return { payload, token };
+  } catch (err) {
+    throw err;
+  }
 }
 
 export async function ForgotPasswordRepo() {

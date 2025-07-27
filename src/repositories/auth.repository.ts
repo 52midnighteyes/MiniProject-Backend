@@ -1,5 +1,8 @@
 import { AppError } from "../classes/AppError.utils";
-import { IRegisterParam, IVerifyUserParam } from "../interfaces/auth.interface";
+import {
+  IRegisterParams,
+  IVerifyUserParam,
+} from "../interfaces/auth.interface";
 import { findUserByEmail } from "../utils/dataFinder";
 import prisma from "../lib/prisma";
 import { sign } from "jsonwebtoken";
@@ -26,7 +29,7 @@ async function findUserById(id: string) {
   return response;
 }
 
-export async function RegisterRepo(params: IRegisterParam) {
+export async function RegisterRepo(params: IRegisterParams) {
   try {
     const emailCheck = await findUserByEmail(params.email);
     if (emailCheck) throw new AppError(409, "email already registered");
@@ -71,7 +74,16 @@ export async function RegisterRepo(params: IRegisterParam) {
         }
       }
 
-      const refCode = randomCodeGenerator("R");
+      let refCode;
+      let refExists = true;
+
+      while (refExists) {
+        refCode = randomCodeGenerator("R");
+        refExists = !!(await tx.user.findUnique({
+          where: { referral_code: refCode },
+        }));
+      }
+
       const user = await tx.user.create({
         data: {
           firstname: params.firstname,
@@ -79,7 +91,7 @@ export async function RegisterRepo(params: IRegisterParam) {
           email: params.email,
           password: hashed,
           role_id: params.role_id,
-          referral_code: refCode,
+          referral_code: refCode as string,
           referrer_id: reffOwner?.id || null,
         },
         select: {
@@ -97,10 +109,20 @@ export async function RegisterRepo(params: IRegisterParam) {
       });
 
       if (reffOwner) {
-        const couponCode = randomCodeGenerator("C");
+        let couponCode;
+        let couponExists = true;
+        while (couponExists) {
+          couponCode = randomCodeGenerator("C");
+          couponExists = !!(await tx.coupon.findUnique({
+            where: {
+              code: couponCode,
+            },
+          }));
+        }
+
         await tx.coupon.create({
           data: {
-            code: couponCode,
+            code: couponCode as string,
             user_id: user.id,
             expired_date: threeMonthsLater,
           },
@@ -149,4 +171,17 @@ export async function VerifyUserRepo(id: IVerifyUserParam) {
   } catch (err) {
     throw err;
   }
+}
+
+export async function LoginRepo() {
+  //compare hash
+  //send data + token ke FE
+}
+
+export async function ForgotPasswordRepo() {
+  //ambil email dari param
+  //query data
+  //ambil data jadi payload
+  //bikin temp token
+  //kirim ke email
 }

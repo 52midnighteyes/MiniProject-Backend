@@ -1,6 +1,4 @@
-import { types } from "util";
-
-export interface IRegisterParam {
+export interface IRegisterParams {
   firstname: string;
   lastname: string;
   email: string;
@@ -10,3 +8,8 @@ export interface IRegisterParam {
 }
 
 export type IVerifyUserParam = string;
+
+export interface ILoginParams {
+  email: string;
+  password: string;
+}

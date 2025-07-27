@@ -28,7 +28,7 @@ export const VerifyUserSchema = z.object({
   email: z.email().trim().nonempty("email cannot be empty"),
 });
 
-export const IResetPasswordSchmea = z.object({
+export const ResetPasswordSchmea = z.object({
   new_password: z
     .string()
     .trim()

@@ -72,7 +72,7 @@ export async function resetPassowordController(
 ) {
   try {
     const { email } = req.user as IUserParams;
-    const response = resetPassowordRepo({ ...req.body, email });
+    await resetPassowordRepo({ ...req.body, email });
 
     res.status(201).json({
       message: "password has changed",
@@ -106,7 +106,10 @@ export async function ForgotPasswordController(
 ) {
   try {
     const { email } = req.user as IUserParams;
-    const response = await ForgotPasswordRepo({ ...req.body, email });
+    const token = req.header("Authorization")?.replace("Bearer ", "").trim();
+    if (!token)
+      throw new AppError(401, "Unauthorized: Invalid or expired token");
+    const response = await ForgotPasswordRepo({ ...req.body, email, token });
 
     res.status(201).json({
       message: "ok",

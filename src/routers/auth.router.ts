@@ -24,17 +24,17 @@ router.patch(
   validate(ForgotPasswordReqSchema),
   ForgotPasswordReqController
 );
+router.post("/register", validate(userRegisterSchema), RegisterController);
+router.post("/login", validate(userLoginSchema), LoginUserController);
 
 router.use(verifyToken);
 
 router.patch(
-  "/forgot-password",
+  "/reset-password",
   validate(ForgotPasswordSchema),
   ForgotPasswordController
 );
-router.post("/register", validate(userRegisterSchema), RegisterController);
-router.patch("/", VerifyUserController);
-router.post("/login", validate(userLoginSchema), LoginUserController);
+router.patch("/verify", VerifyUserController);
 router.patch(
   "/reset-password",
   validate(ResetPasswordSchmea),

@@ -22,8 +22,6 @@ import Handlebars from "handlebars";
 import { genSaltSync, hashSync } from "bcrypt";
 import mailer from "../lib/nodemailer";
 import { compareSync } from "bcrypt";
-import { hash } from "crypto";
-import { response } from "express";
 
 async function findUserById(id: string) {
   const response = await prisma.user.findFirst({
@@ -258,8 +256,8 @@ export async function resetPassowordRepo(params: IResetPasswordParams) {
     const response = await findUserByEmail(params.email);
     if (!response) throw new AppError(404, "data not found");
     const isOldPasswordMatch = compareSync(
-      response.password,
-      params.old_password
+      params.old_password,
+      response.password
     );
     if (!isOldPasswordMatch)
       throw new AppError(400, "old password doesn't match");
@@ -295,14 +293,15 @@ export async function ForgotPasswordReqRepo(params: IForgotPasswordReqParam) {
       lastname: response.lastname,
       email: response.email,
       role: {
-        ...response.role,
+        role_id: response.role.id,
+        name: response.role.name,
       },
     };
 
     const token = sign(payload, SECRET_KEY as string, { expiresIn: "1h" });
 
-    const updateToken = await prisma.$transaction(async (tx) => {
-      const response = await tx.user.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: {
           email: params,
         },
@@ -310,13 +309,7 @@ export async function ForgotPasswordReqRepo(params: IForgotPasswordReqParam) {
           temp_token: token,
         },
       });
-
-      return response.temp_token;
     });
-
-    if (!updateToken) {
-      throw new AppError(404, "internal server error");
-    }
 
     const hbsPath = path.join(
       __dirname,
@@ -327,7 +320,13 @@ export async function ForgotPasswordReqRepo(params: IForgotPasswordReqParam) {
     const html = compileHbs({
       name: `${response.firstname} ${response.lastname}`,
       token: token,
-      domain: `${FE_URL}/api/auth/forgot_password`,
+      domain: `${FE_URL}/forgot_password`,
+    });
+
+    await mailer.sendMail({
+      to: response.email,
+      subject: "Reset Password Request",
+      html: html,
     });
   } catch (err) {
     throw err;
@@ -336,6 +335,22 @@ export async function ForgotPasswordReqRepo(params: IForgotPasswordReqParam) {
 
 export async function ForgotPasswordRepo(params: IForgotPasswordParams) {
   try {
+    const user = await findUserByEmail(params.email);
+    if (!user) throw new AppError(404, "user not found");
+
+    console.log("paramramramramramrm", params.token);
+    console.log("usererrerer", user.temp_token);
+    if (params.token !== user.temp_token) {
+      throw new AppError(404, "Unauthorized: Token does not match");
+    }
+
+    if (compareSync(params.password, user.password)) {
+      throw new AppError(
+        400,
+        "New Password Can not be the same as the old password"
+      );
+    }
+
     const salt = genSaltSync(10);
     const hashed = hashSync(params.password, salt);
 
@@ -346,6 +361,7 @@ export async function ForgotPasswordRepo(params: IForgotPasswordParams) {
         },
         data: {
           password: hashed,
+          temp_token: null,
         },
         select: {
           id: true,

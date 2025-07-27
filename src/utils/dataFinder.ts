@@ -11,6 +11,7 @@ export async function findUserByEmail(email: string) {
       login_attempt: true,
       is_suspended: true,
       suspended_cooldown: true,
+      temp_token: true,
       role: {
         select: {
           name: true,

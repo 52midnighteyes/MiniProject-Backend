@@ -23,6 +23,7 @@ export interface IResetPasswordParams {
 export interface IForgotPasswordParams {
   password: string;
   email: string;
+  token: string;
 }
 
 export type IForgotPasswordReqParam = string;

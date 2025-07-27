@@ -10,7 +10,8 @@ export async function verifyToken(
   next: NextFunction
 ) {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const token = req.header("Authorization")?.replace("Bearer ", "").trim();
+    console.log(token);
     if (!token)
       throw new AppError(401, "Unauthorized: Invalid or expired token");
     const decoded = verify(token, SECRET_KEY as string);

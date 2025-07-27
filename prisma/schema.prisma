@@ -27,11 +27,15 @@ model User {
  avatar String?
  description String?
  login_attempt Int @default(0)
+ login_time_out DateTime?
+
  temp_token String?
  is_verified Boolean @default(false)
  created_at DateTime @default(now())
  deleted_at DateTime?
  edited_at DateTime @updatedAt
+ is_suspended Boolean? @default(false)
+ suspended_cooldown DateTime?
 
  role_id String
  role Role @relation(fields: [role_id], references: [id])

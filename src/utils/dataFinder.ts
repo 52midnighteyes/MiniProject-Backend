@@ -4,13 +4,18 @@ export async function findUserByEmail(email: string) {
   const response = await prisma.user.findFirst({
     select: {
       id: true,
+      password: true,
       firstname: true,
       lastname: true,
       email: true,
-      role_id: true,
+      login_attempt: true,
+      is_suspended: true,
+      suspended_cooldown: true,
+      temp_token: true,
       role: {
         select: {
           name: true,
+          id: true,
         },
       },
     },

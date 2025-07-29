@@ -1,4 +1,4 @@
-import { AppError } from "../classes/AppError.utils";
+import { AppError } from "../../classes/AppError.utils";
 import {
   IForgotPasswordParams,
   IForgotPasswordReqParam,
@@ -6,21 +6,21 @@ import {
   IRegisterParams,
   IResetPasswordParams,
   IVerifyUserParam,
-} from "../interfaces/auth.interface";
-import { findUserByEmail } from "../utils/dataFinder";
-import prisma from "../lib/prisma";
+} from "../../interfaces/auth.interface";
+import { findUserByEmail } from "./utils/dataFinder";
+import prisma from "../../lib/prisma";
 import { sign } from "jsonwebtoken";
-import { FE_URL, SECRET_KEY } from "../config";
-import { randomCodeGenerator } from "../utils/randomCode";
+import { FE_URL, SECRET_KEY } from "../../config";
+import { randomCodeGenerator } from "../../utils/randomCode";
 
-import { IUserParams } from "../user";
+import { IUserParams } from "../../user";
 
 import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
 
 import { genSaltSync, hashSync } from "bcrypt";
-import mailer from "../lib/nodemailer";
+import mailer from "../../lib/nodemailer";
 import { compareSync } from "bcrypt";
 
 async function findUserById(id: string) {

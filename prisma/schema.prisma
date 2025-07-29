@@ -72,8 +72,8 @@ model Location {
 
 model Event {
  id String @id @default(uuid())
- nama String
- deskripsi String
+ name String
+ description String
  header String
  start_date DateTime
  end_date DateTime
@@ -137,6 +137,7 @@ model Transaction {
  created_at DateTime @default(now())
  expired_at DateTime
  is_attending Boolean @default(false)
+ total_price Decimal
 
  user User @relation(fields: [user_id], references: [id])
  event Event @relation(fields: [event_id], references: [id])

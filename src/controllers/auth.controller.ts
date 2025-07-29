@@ -6,7 +6,7 @@ import {
   ForgotPasswordReqRepo,
   resetPassowordRepo,
   LoginRepo,
-} from "../repositories/auth.repository";
+} from "../repositories/auth.repository/auth.repository";
 import { AppError } from "../classes/AppError.utils";
 import { IUserParams } from "../user";
 

@@ -1,4 +1,5 @@
-import prisma from "../lib/prisma";
+import { response } from "express";
+import prisma from "../../../lib/prisma";
 
 export async function findUserByEmail(email: string) {
   const response = await prisma.user.findFirst({
@@ -48,6 +49,29 @@ export async function findUserByRefferal(refferal_code: string) {
       referral_code: {
         equals: refferal_code,
         mode: "insensitive",
+      },
+    },
+  });
+
+  return response;
+}
+
+export async function findEventById(id: string) {
+  const response = await prisma.event.findFirst({
+    where: {
+      id,
+    },
+    select: {
+      id: true,
+      name: true,
+      is_free: true,
+      status: true,
+      ticketTypes: {
+        select: {
+          id: true,
+          price: true,
+          type: true,
+        },
       },
     },
   });

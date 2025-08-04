@@ -1,14 +1,13 @@
 import { Request, Response, NextFunction, response } from "express";
-import {
-  RegisterRepo,
-  VerifyUserRepo,
-  ForgotPasswordRepo,
-  ForgotPasswordReqRepo,
-  resetPassowordRepo,
-  LoginRepo,
-} from "../repositories/auth.repository/auth.repository";
+ß;
 import { AppError } from "../classes/AppError.utils";
 import { IUserParams } from "../user";
+import RegisterService from "../Services/auth.service/RegisterService";
+import LoginService from "../Services/auth.service/LoginService";
+import VerifyUserService from "../Services/auth.service/VerifyUser";
+import resetPassowordService from "../Services/auth.service/ResetPasswordService";
+import RequestForgotPasswordRepo from "../Services/auth.service/RequestForgotPasswordService";
+import ForgotPasswordService from "../Services/auth.service/ForgotPasswordService";
 
 export async function RegisterController(
   req: Request,
@@ -16,7 +15,7 @@ export async function RegisterController(
   next: NextFunction
 ) {
   try {
-    const response = await RegisterRepo(req.body);
+    const response = await RegisterService(req.body);
 
     res.status(201).json({
       message: "registration success",
@@ -36,7 +35,7 @@ export async function LoginUserController(
   next: NextFunction
 ) {
   try {
-    const response = await LoginRepo({ ...req.body });
+    const response = await LoginService({ ...req.body });
 
     res.status(210).json({
       message: "ok",
@@ -54,7 +53,7 @@ export async function VerifyUserController(
 ) {
   try {
     const id = req.query.id;
-    const response = await VerifyUserRepo(id as string);
+    const response = await VerifyUserService(id as string);
 
     res.status(201).json({
       messsage: "successfull",
@@ -72,7 +71,7 @@ export async function resetPassowordController(
 ) {
   try {
     const { email } = req.user as IUserParams;
-    await resetPassowordRepo({ ...req.body, email });
+    await resetPassowordService({ ...req.body, email });
 
     res.status(201).json({
       message: "password has changed",
@@ -89,7 +88,7 @@ export async function ForgotPasswordReqController(
 ) {
   try {
     const email: string = req.body.email;
-    await ForgotPasswordReqRepo(email);
+    await RequestForgotPasswordRepo(email);
 
     res.status(201).json({
       message: "email sent",
@@ -109,7 +108,7 @@ export async function ForgotPasswordController(
     const token = req.header("Authorization")?.replace("Bearer ", "").trim();
     if (!token)
       throw new AppError(401, "Unauthorized: Invalid or expired token");
-    const response = await ForgotPasswordRepo({ ...req.body, email, token });
+    const response = await ForgotPasswordService({ ...req.body, email, token });
 
     res.status(201).json({
       message: "ok",

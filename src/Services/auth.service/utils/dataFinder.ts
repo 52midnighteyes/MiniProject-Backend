@@ -78,3 +78,16 @@ export async function findEventById(id: string) {
 
   return response;
 }
+
+export async function findUserById(id: string) {
+  const response = await prisma.user.findFirst({
+    select: {
+      id: true,
+    },
+    where: {
+      id,
+    },
+  });
+
+  return response;
+}

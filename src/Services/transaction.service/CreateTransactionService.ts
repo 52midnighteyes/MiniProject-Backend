@@ -1,24 +1,11 @@
-import { AppError } from "../../classes/AppError.utils";
-import {
-  IGetAllTranscationByEventIdParams,
-  IGetAllTranscationByUserIdParams,
-  IGetRevenueByDateParams,
-  ITransactionParam,
-} from "../../interfaces/transaction.interface";
 import prisma from "../../lib/prisma";
+import { AppError } from "../../classes/AppError.utils";
+import { ICreateTransactionParam } from "../../interfaces/transaction.interface";
 import { randomCodeGenerator } from "../../utils/randomCode";
-import {
-  findTransactionByEventId,
-  findTransactionByUserId,
-} from "./utils/dataFinder";
 
-function DateFilter(days: number) {
-  const response = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-  return response;
-}
-
-export async function CreateTransactionRepo(params: ITransactionParam) {
+export default async function CreateTransactionService(
+  params: ICreateTransactionParam
+) {
   const tickets = await prisma.ticketType.findMany({
     where: {
       id: params.event_id,
@@ -184,75 +171,6 @@ export async function CreateTransactionRepo(params: ITransactionParam) {
       return transaction;
     });
 
-    return response;
-  } catch (err) {
-    throw err;
-  }
-}
-
-export async function getAllTransactionByEventIdRepo(
-  params: IGetAllTranscationByEventIdParams
-) {
-  try {
-    const response = await findTransactionByEventId(params.event_id);
-    if (response.length === 0) throw new AppError(404, "data not found");
-    return response;
-  } catch (err) {
-    throw err;
-  }
-}
-
-export async function getAllTransactionByUserIdRepo(
-  params: IGetAllTranscationByUserIdParams
-) {
-  try {
-    const response = await findTransactionByUserId(params.user_id);
-    if (response.length === 0) throw new AppError(404, "data not found");
-    return response;
-  } catch (err) {
-    throw err;
-  }
-}
-
-export async function getEventRevenueByDateRepo(
-  params: IGetRevenueByDateParams
-) {
-  try {
-    const response = await prisma.$transaction(async (tx) => {
-      const totalRevenue = await tx.transaction.aggregate({
-        _sum: {
-          total_price: true,
-        },
-        where: {
-          event_id: params.event_id,
-          created_at: {
-            gte: DateFilter(params.days),
-          },
-          status: "PAID",
-        },
-      });
-
-      const totalTicketSold = await tx.transactionList.aggregate({
-        _count: {
-          id: true,
-        },
-        where: {
-          transaction: {
-            event_id: params.event_id,
-            created_at: {
-              gte: DateFilter(params.days),
-            },
-            status: "PAID",
-          },
-        },
-      });
-
-      return {
-        total_revenue: totalRevenue._sum.total_price || 0,
-        total_tickets_sold: totalTicketSold._count.id || 0,
-      };
-    });
-    if (!response) throw new AppError(404, "data not found");
     return response;
   } catch (err) {
     throw err;

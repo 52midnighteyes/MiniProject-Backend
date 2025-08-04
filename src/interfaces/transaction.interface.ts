@@ -1,4 +1,4 @@
-export interface ITransactionParam {
+export interface ICreateTransactionParam {
   user_id: string;
   event_id: string;
   tickets: { id: string; holder_name: string; holder_email: string }[];
@@ -12,15 +12,25 @@ export interface ITransactionParam {
   points: { id: string; points_amount: number; is_used: boolean }[];
 }
 
-export interface IGetAllTranscationByUserIdParams {
+export interface IGetEventTransactionParams {
+  event_id: string;
+}
+
+export interface IGetRevenueQueryParams {
+  event_id: string;
+  days: number;
+}
+
+export interface IGetTransacionByUserIdParams {
   user_id: string;
 }
 
-export interface IGetAllTranscationByEventIdParams {
-  event_id: string;
-}
-
-export interface IGetRevenueByDateParams {
+export interface IGetEventRevenueByDateParams {
   event_id: string;
   days: number;
+}
+
+export interface IGetEORevenueByDateServiceParams {
+  days: number;
+  organizer_id: string;
 }

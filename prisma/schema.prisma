@@ -47,6 +47,7 @@ referrer User? @relation("UserReferrals", fields: [referrer_id], references: [id
  transactions Transaction[]
  coupons Coupon[]
  points Points[]
+ transactionLists  TransactionList[] @relation("UserTransactionHolder")
 }
 
 model Role {
@@ -72,8 +73,8 @@ model Location {
 
 model Event {
  id String @id @default(uuid())
- nama String
- deskripsi String
+ name String
+ description String
  header String
  start_date DateTime
  end_date DateTime
@@ -136,7 +137,7 @@ model Transaction {
  voucher_id String?
  created_at DateTime @default(now())
  expired_at DateTime
- is_attending Boolean @default(false)
+ total_price Decimal
 
  user User @relation(fields: [user_id], references: [id])
  event Event @relation(fields: [event_id], references: [id])
@@ -150,7 +151,15 @@ model TransactionList {
  transaction_id String
  ticket_type_id String
  holder_name String
+ holder_email String
  ticket_code String @unique
+ attending_at DateTime @default(now())
+ is_attending Boolean @default(false)
+
+
+
+holder_id String?
+user User? @relation("UserTransactionHolder", fields: [holder_id], references: [id])
 
  transaction Transaction @relation(fields: [transaction_id], references: [id])
  ticketType TicketType @relation(fields: [ticket_type_id], references: [id])

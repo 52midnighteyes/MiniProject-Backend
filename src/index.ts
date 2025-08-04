@@ -5,6 +5,7 @@ import { errorHandler } from "./middlewares/errorHandler.middleware";
 import { AppError } from "./classes/AppError.utils";
 
 import AuthRouter from "./routers/auth.router";
+import TranscationRouter from "./routers/transaction.router";
 const port = PORT || 8000;
 
 const app = express();
@@ -19,6 +20,7 @@ app.get("/api", (req: Request, res: Response) => {
 //ROUTER
 
 app.use("/api/auth", AuthRouter);
+app.use("/api/transactions", TranscationRouter);
 
 // UKNOWN ROUTE FALLBACK
 app.use((req, res, next) => {

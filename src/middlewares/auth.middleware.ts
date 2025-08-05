@@ -11,16 +11,14 @@ export async function verifyToken(
 ) {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "").trim();
-    console.log(token);
-    if (!token)
-      throw new AppError(401, "Unauthorized: Invalid or expired token");
+    if (!token) throw new AppError(401, "Unauthorized: No token found");
     const decoded = verify(token, SECRET_KEY as string);
 
     req.user = decoded as IUserParams;
 
     next();
   } catch (err) {
-    return next(new AppError(401, "Unauthorized: Invalid or expired token"));
+    next(err);
   }
 }
 

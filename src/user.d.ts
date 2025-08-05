@@ -3,6 +3,7 @@ export interface IUserParams {
   email: string;
   firstname: string;
   lastname: string;
+  avatar: string | null;
   role: {
     id: string;
     name: string;

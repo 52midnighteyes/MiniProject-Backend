@@ -3,7 +3,7 @@ import { AppError } from "../../classes/AppError.utils";
 
 import { findUserById } from "./utils/dataFinder";
 import { IVerifyUserParam } from "../../interfaces/auth.interface";
-export async function VerifyUserService(id: IVerifyUserParam) {
+export default async function VerifyUserService(id: IVerifyUserParam) {
   try {
     const checkUser = await findUserById(id);
     if (!checkUser) throw new AppError(404, "user not found");

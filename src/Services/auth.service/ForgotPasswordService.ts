@@ -41,6 +41,7 @@ export default async function ForgotPasswordService(
           firstname: true,
           lastname: true,
           email: true,
+          avatar: true,
           role: {
             select: {
               id: true,

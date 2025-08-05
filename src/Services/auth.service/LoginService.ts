@@ -65,6 +65,7 @@ export default async function LoginService(params: ILoginParams) {
       email: user.email,
       firstname: user.firstname,
       lastname: user.lastname,
+      avatar: user.avatar,
       role: user.role,
     };
 

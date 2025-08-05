@@ -9,6 +9,8 @@ import { randomCodeGenerator } from "../../utils/randomCode";
 import mailer from "../../lib/nodemailer";
 import { sign } from "jsonwebtoken";
 import { SECRET_KEY } from "../../config";
+import Handlebars from "handlebars";
+import { IUserParams } from "../../user";
 
 export default async function RegisterService(params: IRegisterParams) {
   try {
@@ -20,7 +22,7 @@ export default async function RegisterService(params: IRegisterParams) {
 
     const hbsPath = path.join(
       __dirname,
-      "../handlebars-templates/Registration.template.hbs"
+      "../../handlebars-templates/Registration.template.hbs"
     );
     const readHbs = fs.readFileSync(hbsPath, "utf-8");
     const compileHbs = Handlebars.compile(readHbs);
@@ -80,6 +82,7 @@ export default async function RegisterService(params: IRegisterParams) {
           firstname: true,
           lastname: true,
           email: true,
+          avatar: true,
           role: {
             select: {
               name: true,
@@ -121,7 +124,18 @@ export default async function RegisterService(params: IRegisterParams) {
       html: html,
     });
 
-    const token = sign(response, SECRET_KEY as string, { expiresIn: "1h" });
+    const payload: IUserParams = {
+      id: response.id,
+      email: response.email,
+      firstname: response.firstname,
+      lastname: response.lastname,
+      avatar: response.avatar,
+      role: response.role,
+    };
+
+    const token = sign(response as IUserParams, SECRET_KEY as string, {
+      expiresIn: "1h",
+    });
 
     return { response, token };
   } catch (err) {

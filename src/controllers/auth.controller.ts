@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction, response } from "express";
-ß;
 import { AppError } from "../classes/AppError.utils";
 import { IUserParams } from "../user";
 import RegisterService from "../Services/auth.service/RegisterService";
@@ -15,7 +14,7 @@ export async function RegisterController(
   next: NextFunction
 ) {
   try {
-    const response = await RegisterService(req.body);
+    const response = await RegisterService({ ...req.body });
 
     res.status(201).json({
       message: "registration success",

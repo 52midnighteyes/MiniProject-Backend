@@ -14,6 +14,8 @@ export async function RegisterController(
   next: NextFunction
 ) {
   try {
+    console.log({ ...req.body });
+    console.log("hihihi");
     const response = await RegisterService({ ...req.body });
 
     res.status(201).json({

@@ -14,14 +14,17 @@ const user_router_1 = __importDefault(require("./routers/user.router"));
 const event_router_1 = __importDefault(require("./routers/event.router"));
 const coupon_router_1 = __importDefault(require("./routers/coupon.router"));
 const point_router_1 = __importDefault(require("./routers/point.router"));
-const port = config_1.PORT || 8000;
+const helmet_1 = __importDefault(require("helmet"));
+const port = Number(process.env.PORT) || Number(config_1.PORT) || 8000;
 const app = (0, express_1.default)();
+const corsOrigin = process.env.CORS_ORIGIN || config_1.CORS_ORIGIN || "http://localhost:3000";
 //MIDDLEWARE
 app.use((0, cors_1.default)({
-    origin: "http://localhost:3000",
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
+app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
 app.use((req, res, next) => {
     console.log("===== Incoming Request =====");

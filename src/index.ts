@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
-import { PORT } from "./config";
+import { PORT, CORS_ORIGIN } from "./config";
 import cors from "cors";
 
 import { errorHandler } from "./middlewares/errorHandler.middleware";
@@ -11,19 +11,23 @@ import UserRouter from "./routers/user.router";
 import EventRouter from "./routers/event.router";
 import CouponRouter from "./routers/coupon.router";
 import PointRouter from "./routers/point.router";
+import helmet from "helmet";
 
-const port = PORT || 8000;
+const port = Number(process.env.PORT) || Number(PORT) || 8000;
 
 const app = express();
+const corsOrigin =
+  process.env.CORS_ORIGIN || CORS_ORIGIN || "http://localhost:3000";
 
 //MIDDLEWARE
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.use(helmet());
 
 app.use(express.json());
 

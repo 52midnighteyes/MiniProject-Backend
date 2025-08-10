@@ -1,6 +1,8 @@
 import prisma from "../../lib/prisma";
 import { AppError } from "../../classes/AppError.utils";
 
+//CUSTOM GENERATED SUPAYA BISA INPUT EVENT... NO MULTER YET... EMERGENCY END POINT.
+
 // === INTERFACE ===
 interface TicketInput {
   type: string;

@@ -1,214 +1,207 @@
 generator client {
- provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
- provider = "postgresql"
- url = env("DATABASE_URL")
- directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum TransactionStatus {
- WAITING_FOR_PAYMENT
- PAID
- FAILED
- CANCELED
- EXPIRED
+  WAITING_FOR_PAYMENT
+  WAITING_FOR_CONFIRMATION
+  PAID
+  FAILED
+  CANCELED
+  EXPIRED
 }
 
 model User {
- id String @id @default(uuid())
- firstname String
- lastname String
- email String @unique
- password String
- referral_code String @unique
- referrer_id String?
- avatar String?
- description String?
- login_attempt Int @default(0)
- login_time_out DateTime?
+  id                String       @id @default(uuid())
+  firstname         String
+  lastname          String
+  email             String       @unique
+  password          String
+  referral_code     String       @unique
+  referrer_id       String?
+  avatar            String?
+  description       String?
+  login_attempt     Int          @default(0)
+  login_time_out    DateTime?
+  temp_token        String?
+  is_verified       Boolean      @default(false)
+  created_at        DateTime     @default(now())
+  deleted_at        DateTime?
+  edited_at         DateTime     @updatedAt
+  is_suspended      Boolean?     @default(false)
+  suspended_cooldown DateTime?
 
- temp_token String?
- is_verified Boolean @default(false)
- created_at DateTime @default(now())
- deleted_at DateTime?
- edited_at DateTime @updatedAt
- is_suspended Boolean? @default(false)
- suspended_cooldown DateTime?
+  role_id           String
+  role              Role         @relation(fields: [role_id], references: [id])
 
- role_id String
- role Role @relation(fields: [role_id], references: [id])
+  referrer          User?        @relation("UserReferrals", fields: [referrer_id], references: [id])
+  referred_users    User[]       @relation("UserReferrals")
 
-referrer User? @relation("UserReferrals", fields: [referrer_id], references: [id])
- referred_users User[]   @relation("UserReferrals") 
-
- events Event[] @relation("UserEvents")
- transactions Transaction[]
- coupons Coupon[]
- points Points[]
- transactionLists  TransactionList[] @relation("UserTransactionHolder")
+  events            Event[]      @relation("UserEvents")
+  transactions      Transaction[]
+  coupons           Coupon[]
+  points            Points[]
 }
 
 model Role {
- id String @id @default(uuid())
- name String @unique
+  id    String @id @default(uuid())
+  name  String @unique
 
- users User[]
+  users User[]
 }
 
 model Province {
- id String @id @default(uuid())
- name String @unique
- locations Location[]
+  id       String     @id @default(uuid())
+  name     String     @unique
+
+  locations Location[]
 }
 
 model Location {
- id String @id @default(uuid())
- city String
- province_id String
- province Province @relation(fields: [province_id], references: [id])
- events Event[]
+  id          String     @id @default(uuid())
+  city        String
+
+  province_id String
+  province    Province   @relation(fields: [province_id], references: [id])
+
+  events      Event[]
 }
 
 model Event {
- id String @id @default(uuid())
- name String
- description String
- header String
- start_date DateTime
- end_date DateTime
- start_time String
- end_time String
- is_free Boolean @default(false)
- adress String
- slug String @unique
- status String
- created_at DateTime @default(now())
- edited_at DateTime @updatedAt
+  id              String           @id @default(uuid())
+  name            String
+  description     String
+  header          String?
+  start_date      DateTime
+  end_date        DateTime
+  start_time      String
+  end_time        String
+  is_free         Boolean          @default(false)
+  adress          String
+  slug            String           @unique
+  status          String
+  created_at      DateTime         @default(now())
+  edited_at       DateTime         @updatedAt
 
- location_id String
- organizer_id String
+  location_id     String
+  organizer_id    String
 
- location Location @relation(fields: [location_id], references: [id])
- organizer User @relation("UserEvents", fields: [organizer_id], references: [id])
- ticketTypes TicketType[]
- eventCategories EventCategory[]
- transactions Transaction[]
- vouchers Voucher[]
+  location        Location         @relation(fields: [location_id], references: [id])
+  organizer       User             @relation("UserEvents", fields: [organizer_id], references: [id])
+
+  ticketTypes     TicketType[]
+  eventCategories EventCategory[]
+  transactions    Transaction[]
+  vouchers        Voucher[]
 }
 
 model TicketType {
- id String @id @default(uuid())
- event_id String
- type String
- price Int
- available_seat Int
- is_soldout Boolean @default(false)
- description String?
+  id             String        @id @default(uuid())
+  event_id       String
+  type           String
+  price          Int
+  available_seat Int
+  is_soldout     Boolean       @default(false)
+  description    String?
 
- event Event @relation(fields: [event_id], references: [id])
- transactionLists TransactionList[]
+  event          Event         @relation(fields: [event_id], references: [id])
+  transactions   Transaction[] @relation("TicketTypeToTransaction")
 }
 
 model Category {
- id String @id @default(uuid())
- name String @unique
- eventCategories EventCategory[]
+  id              String           @id @default(uuid())
+  name            String           @unique
+
+  eventCategories EventCategory[]
 }
 
 model EventCategory {
- id String @id @default(uuid())
- event_id String
- category_id String
+  id         String   @id @default(uuid())
+  event_id   String
+  category_id String
 
- event Event @relation(fields: [event_id], references: [id])
- category Category @relation(fields: [category_id], references: [id])
+  event     Event     @relation(fields: [event_id], references: [id])
+  category  Category  @relation(fields: [category_id], references: [id])
 
- @@unique([event_id, category_id])
+  @@unique([event_id, category_id])
 }
 
 model Transaction {
- id String @id @default(uuid())
- user_id String
- event_id String
- status TransactionStatus @default(WAITING_FOR_PAYMENT)
- coupon_id String?
- voucher_id String?
- created_at DateTime @default(now())
- expired_at DateTime
- total_price Decimal
+  id             String           @id @default(uuid())
+  user_id        String
+  event_id       String
+  ticket_type_id String
 
- user User @relation(fields: [user_id], references: [id])
- event Event @relation(fields: [event_id], references: [id])
- coupon Coupon? @relation("CouponUsed", fields: [coupon_id], references: [id])
- voucher Voucher? @relation("VoucherUsed", fields: [voucher_id], references: [id])
- items TransactionList[]
-}
+  payment_proof String?
+  status         TransactionStatus @default(WAITING_FOR_PAYMENT)
+  admin_notes String?
+  coupon_id      String?
+  voucher_id     String?
+  created_at     DateTime          @default(now())
+  expired_at     DateTime?
+  total_price    Decimal
+  ticket_code      String?
+  is_attending   Boolean           @default(false)
+  
+  
 
-model TransactionList {
- id String @id @default(uuid())
- transaction_id String
- ticket_type_id String
- holder_name String
- holder_email String
- ticket_code String @unique
- attending_at DateTime @default(now())
- is_attending Boolean @default(false)
-
-
-
-holder_id String?
-user User? @relation("UserTransactionHolder", fields: [holder_id], references: [id])
-
- transaction Transaction @relation(fields: [transaction_id], references: [id])
- ticketType TicketType @relation(fields: [ticket_type_id], references: [id])
- rating Rating?
+  user           User              @relation(fields: [user_id], references: [id])
+  event          Event             @relation(fields: [event_id], references: [id])
+  ticketType     TicketType        @relation("TicketTypeToTransaction", fields: [ticket_type_id], references: [id])
+  coupon         Coupon?           @relation("CouponUsed", fields: [coupon_id], references: [id])
+  voucher        Voucher?          @relation("VoucherUsed", fields: [voucher_id], references: [id])
+  rating         Rating?           @relation("TransactionToRating")
 }
 
 model Rating {
- id String @id @default(uuid())
- transaction_list_id String @unique
- rating Int
- description String?
- created_at DateTime @default(now())
+  id             String       @id @default(uuid())
+  transaction_id String       @unique
+  rating         Int
+  description    String?
+  created_at     DateTime     @default(now())
 
- transactionList TransactionList @relation(fields: [transaction_list_id], references: [id])
+  transaction    Transaction  @relation("TransactionToRating", fields: [transaction_id], references: [id])
 }
 
 model Voucher {
- id String @id @default(uuid())
- event_id String
- code String @unique
- discount_amount Int
- times_used Int @default(0)
- quota Int
- is_available Boolean @default(true)
- expired_date DateTime
+  id              String        @id @default(uuid())
+  event_id        String
+  code            String        @unique
+  discount_amount Int
+  times_used      Int           @default(0)
+  quota           Int
+  is_available    Boolean       @default(true)
+  expired_date    DateTime
 
- event Event @relation(fields: [event_id], references: [id])
- transactions Transaction[] @relation("VoucherUsed")
+  event           Event         @relation(fields: [event_id], references: [id])
+  transactions    Transaction[] @relation("VoucherUsed")
 }
 
 model Coupon {
- id String @id @default(uuid())
- code String @unique
- discount_amount Decimal @default(0.10)
- user_id String
- expired_date DateTime
- is_used Boolean @default(false)
+  id              String        @id @default(uuid())
+  code            String        @unique
+  discount_amount Decimal       @default(0.10)
+  user_id         String
+  expired_date    DateTime
+  is_used         Boolean       @default(false)
 
- user User @relation(fields: [user_id], references: [id])
- transactions Transaction[] @relation("CouponUsed")
+  user            User          @relation(fields: [user_id], references: [id])
+  transactions    Transaction[] @relation("CouponUsed")
 }
 
 model Points {
- id String @id @default(uuid())
- user_id String
- points_amount Int @default(10000)
- created_at DateTime @default(now())
- expired_date DateTime
- is_used Boolean @default(false)
+  id             String       @id @default(uuid())
+  user_id        String
+  points_amount  Int          @default(10000)
+  created_at     DateTime     @default(now())
+  expired_date   DateTime
+  is_used        Boolean      @default(false)
 
- user User @relation(fields: [user_id], references: [id])
+  user           User         @relation(fields: [user_id], references: [id])
 }

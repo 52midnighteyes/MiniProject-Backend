@@ -14,6 +14,8 @@ export async function RegisterController(
   next: NextFunction
 ) {
   try {
+    console.log({ ...req.body });
+    console.log("hihihi");
     const response = await RegisterService({ ...req.body });
 
     res.status(201).json({
@@ -51,9 +53,10 @@ export async function VerifyUserController(
   next: NextFunction
 ) {
   try {
-    const id = req.query.id;
+    const id = req.body.id;
     const response = await VerifyUserService(id as string);
 
+    console.log("sukses");
     res.status(201).json({
       messsage: "successfull",
       data: response,

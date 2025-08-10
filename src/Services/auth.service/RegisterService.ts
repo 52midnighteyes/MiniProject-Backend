@@ -8,7 +8,7 @@ import fs from "fs";
 import { randomCodeGenerator } from "../../utils/randomCode";
 import mailer from "../../lib/nodemailer";
 import { sign } from "jsonwebtoken";
-import { SECRET_KEY } from "../../config";
+import { FE_URL, SECRET_KEY } from "../../config";
 import Handlebars from "handlebars";
 import { IUserParams } from "../../user";
 
@@ -19,16 +19,6 @@ export default async function RegisterService(params: IRegisterParams) {
 
     const salt = genSaltSync(15);
     const hashed = hashSync(params.password, salt);
-
-    const hbsPath = path.join(
-      __dirname,
-      "../../handlebars-templates/Registration.template.hbs"
-    );
-    const readHbs = fs.readFileSync(hbsPath, "utf-8");
-    const compileHbs = Handlebars.compile(readHbs);
-    const html = compileHbs({
-      name: `${params.firstname} ${params.lastname}`,
-    });
 
     const response = await prisma.$transaction(async (tx) => {
       const threeMonthsLater = new Date();
@@ -117,7 +107,16 @@ export default async function RegisterService(params: IRegisterParams) {
     });
 
     if (!response) throw new AppError(500, "registration error");
-
+    const hbsPath = path.join(
+      __dirname,
+      "../../handlebars-templates/Registration.template.hbs"
+    );
+    const readHbs = fs.readFileSync(hbsPath, "utf-8");
+    const compileHbs = Handlebars.compile(readHbs);
+    const html = compileHbs({
+      name: `${params.firstname} ${params.lastname}`,
+      verificationLink: `${FE_URL}/pages/auth/verify-user?id=${response.id}`,
+    });
     await mailer.sendMail({
       to: response.email,
       subject: "Welcome to Better Ticket",

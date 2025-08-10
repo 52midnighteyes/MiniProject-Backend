@@ -1,11 +1,13 @@
 import { Router } from "express";
 
 import {
+  ConfirmPaymentController,
+  CreatePaymentController,
   CreateTransactionController,
   GetEORevenueStatisticByDateController,
-  GetEventRevenueByDateController,
   GetTransactionByEventIdController,
   GetTransactionByUserIdController,
+  UpdateTransactionController,
 } from "../controllers/transaction.controller";
 import { AdminGuard, verifyToken } from "../middlewares/auth.middleware";
 import validate from "../middlewares/validator.middleware";
@@ -16,6 +18,9 @@ import {
   GetTransactionByEventIdSchema,
   GetTransactionByUserIdSchema,
 } from "../schemas/transaction.schema";
+import validateQuery from "../middlewares/queryvalidator.middleware";
+import uploader from "../middlewares/uploader.middleware";
+uploader;
 
 const router = Router();
 
@@ -27,7 +32,6 @@ router.get(
   AdminGuard(["user"]),
   GetTransactionByUserIdController
 );
-router.use(AdminGuard(["admin", "event_organizer"]));
 
 router.post(
   "/",
@@ -35,25 +39,37 @@ router.post(
   CreateTransactionController
 );
 
-router.get(
-  "/dashboard",
-  validate(GetEventRevenueByDateSchema),
-  GetEventRevenueByDateController
+router.post(
+  "/payment",
+  uploader().single("payment_proof"),
+  CreatePaymentController
 );
+
+router.use(AdminGuard(["ADMIN", "EVENT_ORGANIZER"]));
+
+router.post("/", UpdateTransactionController);
+
+// router.get(
+//   "/dashboard",
+//   validateQuery(GetEventRevenueByDateSchema),
+//   GetEventRevenueByDateController
+// );
 router.get(
   "/revenue/organizer",
-  validate(GetEORevenueByDateServiceSchema),
+  validateQuery(GetEORevenueByDateServiceSchema),
   GetEORevenueStatisticByDateController
 );
-router.get(
-  "/revenue/event",
-  validate(GetEventRevenueByDateSchema),
-  GetEventRevenueByDateController
-);
+// router.get(
+//   "/revenue/event",
+//   validateQuery(GetEventRevenueByDateSchema),
+//   GetEventRevenueByDateController
+// );
 router.get(
   "/organizer",
-  validate(GetTransactionByEventIdSchema),
+  validateQuery(GetTransactionByEventIdSchema),
   GetTransactionByEventIdController
 );
+
+router.patch("/payment/confirmation", ConfirmPaymentController);
 
 export default router;

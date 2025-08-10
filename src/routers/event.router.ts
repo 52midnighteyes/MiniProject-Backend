@@ -1,17 +1,35 @@
 import { Router } from "express";
-import { GetEventAttendersByDateController } from "../controllers/event.controller";
+import {
+  ConfirmEventAttendersController,
+  CreateEventController,
+  GetEventAttendersByDateController,
+} from "../controllers/event.controller";
 import { AdminGuard, verifyToken } from "../middlewares/auth.middleware";
 import validate from "../middlewares/validator.middleware";
-import { GetEventAttendersByDateSchema } from "../schemas/event.schema";
+import {
+  GetEventAttendersByDateSchema,
+  GetEventDetailsByIdSchema,
+} from "../schemas/event.schema";
+import { GetEventDetailsByIdController } from "../controllers/event.controller";
+import validateQuery from "../middlewares/queryvalidator.middleware";
 
 const router = Router();
 
 router.use(verifyToken);
+router.post("/", CreateEventController);
+
 router.get(
   "/",
-  AdminGuard(["event_organizer", "admin"]),
+  AdminGuard(["EVENT_ORGANIZER", "ADMIN"]),
   validate(GetEventAttendersByDateSchema),
   GetEventAttendersByDateController
 );
 
+router.get(
+  "/details",
+  validateQuery(GetEventDetailsByIdSchema),
+  GetEventDetailsByIdController
+);
+
+router.patch("/attender", ConfirmEventAttendersController);
 export default router;

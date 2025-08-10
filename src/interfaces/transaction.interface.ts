@@ -1,18 +1,15 @@
-export interface ICreateTransactionParam {
+import { TransactionStatus } from "@prisma/client";
+
+export interface ICreateTransactionParams {
   user_id: string;
   event_id: string;
-  tickets: { id: string; holder_name: string; holder_email: string }[];
-  coupon: {
-    id: string;
-  };
-  voucher: {
-    code: string;
-    event_id: string;
-  };
-  points: { id: string; points_amount: number; is_used: boolean }[];
+  ticket_type_id: string;
+  coupon_code?: string;
+  points_id?: string;
+  voucher_code?: string;
 }
 
-export interface IGetEventTransactionParams {
+export interface IGetAllEventTransactionByIdParams {
   event_id: string;
 }
 
@@ -21,7 +18,7 @@ export interface IGetRevenueQueryParams {
   days: number;
 }
 
-export interface IGetTransacionByUserIdParams {
+export interface IGetAllUserTransactionByIdParams {
   user_id: string;
 }
 
@@ -30,7 +27,29 @@ export interface IGetEventRevenueByDateParams {
   days: number;
 }
 
-export interface IGetEORevenueByDateServiceParams {
+export interface IGetOrganizerRevenueByDateServiceParams {
   days: number;
   organizer_id: string;
+}
+
+export interface IGetTransactionDataGroupByDateService {
+  days: string;
+}
+
+export interface IUpdateTransactionStatus {
+  id: string;
+  status: TransactionStatus;
+}
+
+export interface ICreatePaymentService {
+  transaction_id: string;
+  user_id: string;
+  payment_proof: Express.Multer.File;
+}
+
+export interface IConfirmTransactionParams {
+  status: TransactionStatus;
+  transaction_id: string;
+  organizer_id: string;
+  notes?: string;
 }

@@ -5,6 +5,7 @@ import { sign } from "jsonwebtoken";
 import { SECRET_KEY, FE_URL } from "../../config";
 import { IForgotPasswordReqParam } from "../../interfaces/auth.interface";
 import mailer from "../../lib/nodemailer";
+import Handlebars from "handlebars";
 
 import path from "path";
 import fs from "fs";
@@ -15,7 +16,7 @@ export default async function RequestForgotPasswordRepo(
   try {
     const response = await findUserByEmail(params);
     if (!response) {
-      throw new AppError(404, "we sent you the email");
+      return console.log("email isnt valid");
     }
 
     const payload = {
@@ -44,14 +45,14 @@ export default async function RequestForgotPasswordRepo(
 
     const hbsPath = path.join(
       __dirname,
-      "../handlebars-templates/ForgotPasswordRequest.template.hbs"
+      "../../handlebars-templates/ForgotPasswordRequest.template.hbs"
     );
     const readHbs = fs.readFileSync(hbsPath, "utf-8");
     const compileHbs = Handlebars.compile(readHbs);
     const html = compileHbs({
       name: `${response.firstname} ${response.lastname}`,
       token: token,
-      domain: `${FE_URL}/forgot_password`,
+      domain: `${FE_URL}/pages/auth/reset-password-by-token`,
     });
 
     await mailer.sendMail({

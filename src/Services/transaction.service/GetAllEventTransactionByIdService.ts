@@ -1,9 +1,9 @@
-import { IGetEventTransactionParams } from "../../interfaces/transaction.interface";
+import { IGetAllEventTransactionByIdParams } from "../../interfaces/transaction.interface";
 import { findTransactionByEventId } from "./utils/dataFinder";
 import { AppError } from "../../classes/AppError.utils";
 
-export default async function GetTransactionsByEventIdService(
-  params: IGetEventTransactionParams
+export default async function GetAllEventTransactionByIdService(
+  params: IGetAllEventTransactionByIdParams
 ) {
   try {
     const response = await findTransactionByEventId(params.event_id);

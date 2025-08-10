@@ -12,7 +12,10 @@ export default async function ForgotPasswordService(
 ) {
   try {
     const user = await findUserByEmail(params.email);
+
     if (!user) throw new AppError(404, "user not found");
+    console.log("ini params", params.token, "ini token db", user.temp_token);
+
     if (params.token !== user.temp_token) {
       throw new AppError(404, "Unauthorized: Token does not match");
     }
@@ -35,6 +38,7 @@ export default async function ForgotPasswordService(
         data: {
           password: hashed,
           temp_token: null,
+          is_suspended: false,
         },
         select: {
           id: true,

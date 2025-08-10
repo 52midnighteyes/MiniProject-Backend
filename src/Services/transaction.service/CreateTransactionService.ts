@@ -1,169 +1,124 @@
 import prisma from "../../lib/prisma";
 import { AppError } from "../../classes/AppError.utils";
-import { ICreateTransactionParam } from "../../interfaces/transaction.interface";
+import { ICreateTransactionParams } from "../../interfaces/transaction.interface";
 import { randomCodeGenerator } from "../../utils/randomCode";
+import { findUserById } from "../auth.service/utils/dataFinder";
+// import { Decimal } from "@prisma/client/runtime/library"; // ga kepake
 
 export default async function CreateTransactionService(
-  params: ICreateTransactionParam
+  params: ICreateTransactionParams
 ) {
-  const tickets = await prisma.ticketType.findMany({
-    where: {
-      id: params.event_id,
-      is_soldout: false,
-    },
-  });
-
-  if (tickets.length === 0) {
-    throw new AppError(404, "No ticket types found for this event");
-  }
-
-  if (params.tickets.length === 0) {
-    throw new AppError(400, "No tickets provided");
-  }
-
-  for (let i = 0; i < params.tickets.length; i++) {
-    const findSeat = tickets.find((tx) => tx.id === params.tickets[i].id);
-    if (!findSeat) throw new AppError(404, "ticket not found");
-    if (findSeat.available_seat < 1) {
-      throw new AppError(404, "ticket sold out");
-    }
-  }
-
-  const voucher = await prisma.voucher.findFirst({
-    where: {
-      code: params.voucher.code,
-      event_id: params.voucher.event_id,
-      is_available: true,
-    },
-  });
-
-  if (!voucher)
-    throw new AppError(404, "voucher is invalid or reached its limit");
-  if (voucher.expired_date < new Date(Date.now()))
-    throw new AppError(400, "voucher is expired");
-
-  const points = await prisma.points.findMany({
-    where: {
-      user_id: params.user_id,
-    },
-  });
-
-  for (const p of params.points) {
-    const isPointValid = points.find(
-      (tx) => tx.id === p.id && tx.is_used === false
-    );
-    if (!isPointValid)
-      throw new AppError(404, "Point not found or already used");
-  }
-
-  const coupon = await prisma.coupon.findFirst({
-    where: {
-      id: params.coupon.id,
-      user_id: params.user_id,
-    },
-  });
-
-  if (!coupon)
-    throw new AppError(404, "not enough point not found or already used");
-
-  let totalPrice = 0;
-  for (const t of params.tickets) {
-    const matchedTicket = tickets.find((x) => x.id === t.id);
-    if (matchedTicket) totalPrice += matchedTicket.price;
-  }
-  let pointsTotal = params.points.reduce((p, i) => p + i.points_amount, 0);
-
-  let paidAmount = totalPrice - voucher.discount_amount - pointsTotal;
-  if (coupon.discount_amount) {
-    paidAmount -= paidAmount * Number(coupon.discount_amount);
-  }
-
-  if (paidAmount < 0) {
-    paidAmount = 0;
-  }
+  let voucher = 0;
+  let points = 0;
+  let coupon = 0;
 
   try {
+    const user = await findUserById(params.user_id);
+    if (!user) throw new AppError(404, "User not found");
+
+    const voucherCode = await prisma.voucher.findFirst({
+      where: {
+        code: params.voucher_code,
+        is_available: true,
+        expired_date: { gte: new Date() },
+      },
+    });
+
+    if (voucherCode) {
+      voucher = voucherCode.discount_amount;
+    }
+
+    // === HANYA CEK POINTS JIKA ADA points_id ===
+    const checkPoints = params.points_id
+      ? await prisma.points.findFirst({
+          where: {
+            id: params.points_id,
+            is_used: false,
+            expired_date: { gte: new Date() },
+          },
+        })
+      : null;
+
+    if (checkPoints) {
+      points = checkPoints.points_amount;
+    }
+
+    const couponCode = await prisma.coupon.findFirst({
+      where: {
+        code: params.coupon_code,
+        is_used: false,
+        expired_date: { gte: new Date() },
+      },
+    });
+
+    if (couponCode) {
+      // asumsi: discount_amount disimpan sebagai persentase (0.1 = 10%)
+      coupon = couponCode.discount_amount.toNumber();
+    }
+
+    const event = await prisma.event.findFirst({
+      where: { id: params.event_id },
+      include: {
+        ticketTypes: {
+          where: { id: params.ticket_type_id },
+        },
+      },
+    });
+
+    if (!event || event.ticketTypes.length === 0) {
+      throw new AppError(404, "Event or ticket type are incorrect");
+    }
+
     const response = await prisma.$transaction(async (tx) => {
+      let payAmount = event.ticketTypes[0].price;
+
+      // apply potongan
+      payAmount -= points;
+      payAmount -= voucher;
+      payAmount -= payAmount * coupon;
+
+      if (event.is_free || payAmount < 0) payAmount = 0;
+
       const transaction = await tx.transaction.create({
         data: {
-          user_id: params.user_id,
-          event_id: params.event_id,
-          expired_at: new Date(Date.now() + 15 * 60 * 1000),
-          total_price: paidAmount,
-        },
-        select: {
-          id: true,
-          user_id: true,
-          event_id: true,
-          expired_at: true,
-          status: true,
-          total_price: true,
+          user_id: user.id,
+          event_id: event.id,
+          ticket_type_id: event.ticketTypes[0].id,
+          coupon_id: couponCode?.id || null,
+          voucher_id: voucherCode?.id || null,
+          total_price: payAmount,
+          expired_at: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 jam
         },
       });
 
-      for (const ticket of params.tickets) {
-        const holder = await tx.user.findFirst({
-          where: {
-            email: {
-              mode: "insensitive",
-              equals: ticket.holder_email,
-            },
+      if (voucherCode) {
+        const updatedVoucher = await tx.voucher.update({
+          where: { code: voucherCode.code },
+          data: {
+            quota: { decrement: 1 },
           },
         });
 
-        if (!holder) {
-          console.warn(
-            `Email ${ticket.holder_email} not registered. Skipping holder_id.`
-          );
+        // updatedVoucher.quota sudah NILAI TERBARU setelah decrement
+        if (updatedVoucher.quota < 1) {
+          await tx.voucher.update({
+            where: { id: updatedVoucher.id },
+            data: { is_available: false },
+          });
         }
-        await tx.transactionList.create({
-          data: {
-            transaction_id: transaction.id,
-            ticket_type_id: ticket.id,
-            holder_name: ticket.holder_name,
-            holder_email: ticket.holder_email,
-            holder_id: holder?.id,
-            ticket_code: randomCodeGenerator(
-              `TX${String(new Date().getMinutes()).padStart(
-                2,
-                "0"
-              )}${ticket.holder_name.slice(0, 4).toUpperCase()}`
-            ),
-          },
-        });
       }
 
-      if (voucher.times_used + 1 >= voucher.quota) {
-        await tx.voucher.update({
-          where: { id: voucher.id },
-          data: {
-            times_used: { increment: 1 },
-            is_available: false,
-          },
-        });
-      } else {
-        await tx.voucher.update({
-          where: { id: voucher.id },
-          data: {
-            times_used: { increment: 1 },
-          },
-        });
-      }
-
-      for (const t of params.tickets) {
-        await tx.ticketType.update({
-          where: { id: t.id },
-          data: {
-            available_seat: {
-              decrement: 1,
-            },
-          },
-        });
-      }
-
-      for (const p of params.points) {
+      // === HANYA UPDATE POINTS JIKA ADA points_id & record valid ===
+      if (params.points_id && checkPoints) {
         await tx.points.update({
-          where: { id: p.id },
+          where: { id: checkPoints.id },
+          data: { is_used: true },
+        });
+      }
+
+      if (couponCode) {
+        await tx.coupon.update({
+          where: { id: couponCode.id },
           data: { is_used: true },
         });
       }

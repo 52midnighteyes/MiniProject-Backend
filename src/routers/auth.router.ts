@@ -19,7 +19,7 @@ import { verifyToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.patch(
+router.post(
   "/forgot-password",
   validate(ForgotPasswordReqSchema),
   ForgotPasswordReqController
@@ -30,7 +30,7 @@ router.post("/login", validate(userLoginSchema), LoginUserController);
 router.use(verifyToken);
 
 router.patch(
-  "/reset-password",
+  "/forgot-password",
   validate(ForgotPasswordSchema),
   ForgotPasswordController
 );

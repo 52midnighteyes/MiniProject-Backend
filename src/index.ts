@@ -9,6 +9,9 @@ import AuthRouter from "./routers/auth.router";
 import TranscationRouter from "./routers/transaction.router";
 import UserRouter from "./routers/user.router";
 import EventRouter from "./routers/event.router";
+import CouponRouter from "./routers/coupon.router";
+import PointRouter from "./routers/point.router";
+
 const port = PORT || 8000;
 
 const app = express();
@@ -47,6 +50,8 @@ app.use("/api/auth", AuthRouter);
 app.use("/api/transactions", TranscationRouter);
 app.use("/api/users", UserRouter);
 app.use("/api/events", EventRouter);
+app.use("/api/coupons", CouponRouter);
+app.use("/api/points", PointRouter);
 
 // UKNOWN ROUTE FALLBACK
 app.use((req, res, next) => {

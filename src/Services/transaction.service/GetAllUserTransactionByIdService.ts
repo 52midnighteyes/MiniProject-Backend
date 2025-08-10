@@ -1,10 +1,9 @@
-import prisma from "../../lib/prisma";
 import { findTransactionByUserId } from "./utils/dataFinder";
 import { AppError } from "../../classes/AppError.utils";
-import { IGetTransacionByUserIdParams } from "../../interfaces/transaction.interface";
+import { IGetAllUserTransactionByIdParams } from "../../interfaces/transaction.interface";
 
-export default async function GetTransactionByUserIdService(
-  params: IGetTransacionByUserIdParams
+export default async function GetAllUserTransactionByIdService(
+  params: IGetAllUserTransactionByIdParams
 ) {
   try {
     const response = await findTransactionByUserId(params.user_id);
